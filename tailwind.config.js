@@ -27,8 +27,9 @@ export default {
         delivered:'#4a5568',
       },
       fontFamily: {
-        sans:    ['Inter', 'sans-serif'],
-        display: ['DM Serif Display', 'serif'],
+        sans:      ['Inter', 'sans-serif'],
+        display:   ['DM Serif Display', 'serif'],
+        cormorant: ['Cormorant Garamond', 'serif'],
       },
       boxShadow: {
         card:   '0 1px 3px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3)',

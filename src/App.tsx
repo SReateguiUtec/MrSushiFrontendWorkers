@@ -14,6 +14,12 @@ const flow: Status[] = ['received', 'cooking', 'packing', 'delivery', 'delivered
 
 // ─── Login Page ──────────────────────────────────────────────────────────────
 
+const ACCOUNTS = [
+  { role: 'cocinero',   email: 'cocina@mrsushi.com',  pass: 'cocina123',  color: '#ed8a35' },
+  { role: 'empacador',  email: 'empaque@mrsushi.com', pass: 'empaque123', color: '#8b5bb2' },
+  { role: 'repartidor', email: 'entrega@mrsushi.com', pass: 'entrega123', color: '#1f9b83' },
+]
+
 function LoginPage({ onLogin }: { onLogin: (user: WorkerUser, token: string) => void }) {
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
@@ -28,108 +34,160 @@ function LoginPage({ onLogin }: { onLogin: (user: WorkerUser, token: string) => 
       const { worker, token } = await apiLogin(email, password)
       onLogin(worker, token)
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Error al iniciar sesión')
+      setError(err instanceof Error ? err.message : 'Correo o contraseña incorrectos.')
     } finally {
       setLoading(false)
     }
   }
 
-  const roleColors: Record<string, string> = {
-    cocinero:   '#ed8a35',
-    empacador:  '#8b5bb2',
-    repartidor: '#1f9b83',
-    admin:      '#5b6fd8',
-  }
-
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-canvas p-4">
-      {/* Ambient blobs */}
-      <div className="ambient-blob h-72 w-72 bg-coral/10" style={{ top: '10%', left: '5%', animationDelay: '0s' }} />
-      <div className="ambient-blob h-96 w-96 bg-blue-500/8" style={{ bottom: '15%', right: '8%', animationDelay: '-3s' }} />
-      <div className="dot-grid pointer-events-none absolute inset-0 opacity-40" />
+    <div className="flex min-h-screen bg-ink">
 
-      <div className="relative z-10 w-full max-w-sm">
-        {/* Logo */}
-        <div className="mb-8 flex flex-col items-center gap-4">
-          <div className="relative grid h-16 w-16 place-items-center rounded-[20px] bg-gradient-coral text-white shadow-glow">
-            <Utensils size={26} strokeWidth={2.5} />
-            <span className="absolute -right-1.5 -top-1.5 h-4 w-4 rounded-full border-2 border-canvas bg-[#ffd066] shadow-sm" />
-          </div>
-          <div className="text-center">
-            <div className="font-display text-2xl text-text-1">Mr<span className="text-coral">Sushi</span></div>
-            <div className="mt-1 text-[10px] font-semibold uppercase tracking-[.2em] text-text-3">Panel de Trabajadores</div>
-          </div>
+      {/* ── LEFT — Brand panel ───────────────────────────────────── */}
+      <div className="relative hidden overflow-hidden lg:flex lg:w-[44%] flex-col" style={{ background: '#09090b' }}>
+        {/* Grid texture */}
+        <div className="login-grid absolute inset-0" />
+        {/* Noise overlay */}
+        <div className="login-noise absolute inset-0" />
+
+        {/* Radial gradient glow center */}
+        <div className="pointer-events-none absolute inset-0"
+          style={{ background: 'radial-gradient(ellipse 80% 60% at 30% 70%, rgba(239,87,71,.07) 0%, transparent 65%)' }} />
+
+        {/* Top accent line */}
+        <div className="relative z-10 flex items-center gap-3 p-10">
+          <div className="h-px w-8 bg-coral/70" style={{ transformOrigin: 'left', animation: 'line-grow .8s cubic-bezier(.16,1,.3,1) .3s both' }} />
+          <span className="text-[9px] font-semibold tracking-[.35em] text-coral/70 uppercase">Kitchen Control</span>
         </div>
 
-        {/* Card */}
-        <div className="glass rounded-3xl p-8">
-          <h1 className="text-xl font-bold text-text-1">Bienvenido</h1>
-          <p className="mt-1.5 text-xs text-text-3">Ingresa con tu cuenta de trabajador.</p>
+        {/* Center decorative kanji */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+          <span className="font-cormorant font-light leading-none"
+            style={{ fontSize: '28rem', color: 'rgba(255,255,255,0.018)', letterSpacing: '-0.04em' }}>
+            寿
+          </span>
+        </div>
 
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-            <div>
-              <label className="mb-1.5 block text-[11px] font-semibold text-text-3">Correo</label>
+        {/* Bottom brand */}
+        <div className="relative z-10 mt-auto px-10 pb-10">
+          <h1 className="font-cormorant font-light leading-[0.88] text-white"
+            style={{ fontSize: '5.5rem', letterSpacing: '-0.02em' }}>
+            Mr<br />
+            <span className="italic" style={{ color: '#ef5747' }}>Sushi.</span>
+          </h1>
+
+          <div className="mt-6 h-px w-12 bg-white/15" />
+
+          <p className="mt-5 max-w-[240px] text-[12px] font-light leading-relaxed" style={{ color: 'rgba(255,255,255,.28)' }}>
+            Sistema interno de gestión de pedidos. Acceso exclusivo para el equipo operativo.
+          </p>
+
+          {/* Status pill */}
+          <div className="mt-8 inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5"
+            style={{ borderColor: 'rgba(255,255,255,.07)', background: 'rgba(255,255,255,.03)' }}>
+            <span className="live-dot inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            <span className="text-[9px] font-medium tracking-[.2em] uppercase" style={{ color: 'rgba(255,255,255,.3)' }}>
+              Sistema activo
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── RIGHT — Login form ───────────────────────────────────── */}
+      <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 bg-canvas">
+
+        {/* Mobile logo (hidden on desktop) */}
+        <div className="lg:hidden mb-10 text-center login-enter login-enter-1">
+          <div className="font-cormorant font-light text-5xl text-text-1" style={{ letterSpacing: '-0.02em' }}>
+            Mr<span className="italic" style={{ color: '#ef5747' }}>Sushi</span>
+          </div>
+          <div className="mt-1 text-[9px] tracking-[.3em] text-text-3 uppercase">Kitchen Control</div>
+        </div>
+
+        <div className="w-full max-w-[360px]">
+
+          {/* Heading */}
+          <div className="login-enter login-enter-1 mb-8">
+            <div className="mb-4 flex items-center gap-2.5">
+              <div className="h-px w-5 bg-coral/60" />
+              <span className="text-[9px] font-semibold tracking-[.28em] uppercase" style={{ color: 'rgba(239,87,71,.75)' }}>
+                Acceso restringido
+              </span>
+            </div>
+            <h2 className="font-cormorant font-light leading-tight text-text-1" style={{ fontSize: '2.6rem', letterSpacing: '-0.01em' }}>
+              Bienvenido<br />
+              <span className="italic">al panel.</span>
+            </h2>
+            <p className="mt-2 text-[12px] text-text-3">Ingresa con tu cuenta de trabajador para continuar.</p>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="login-enter login-enter-2">
+              <label className="mb-2 block text-[10px] font-semibold uppercase tracking-[.18em] text-text-3">
+                Correo electrónico
+              </label>
               <input
-                id="login-email"
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="cocina@mrsushi.com"
+                placeholder="usuario@mrsushi.com"
                 required
-                className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm text-text-1 outline-none placeholder:text-text-3 transition focus:border-coral/50 focus:ring-2 focus:ring-coral/15"
+                className="login-input"
               />
             </div>
-            <div>
-              <label className="mb-1.5 block text-[11px] font-semibold text-text-3">Contraseña</label>
+
+            <div className="login-enter login-enter-3">
+              <label className="mb-2 block text-[10px] font-semibold uppercase tracking-[.18em] text-text-3">
+                Contraseña
+              </label>
               <input
-                id="login-password"
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm text-text-1 outline-none placeholder:text-text-3 transition focus:border-coral/50 focus:ring-2 focus:ring-coral/15"
+                className="login-input"
               />
             </div>
 
             {error && (
-              <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-xs text-red-400">
+              <div className="login-enter rounded-lg border border-red-500/15 bg-red-500/08 px-4 py-3 text-[12px] text-red-400">
                 {error}
               </div>
             )}
 
-            <button
-              id="login-submit"
-              type="submit"
-              disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-coral py-3.5 text-sm font-semibold text-white shadow-glow transition-all hover:shadow-glow hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {loading ? <><Loader2 size={16} className="animate-spin" /> Ingresando...</> : 'Ingresar al panel'}
-            </button>
+            <div className="login-enter login-enter-4 pt-1">
+              <button type="submit" disabled={loading} className="login-btn">
+                {loading
+                  ? <><Loader2 size={14} className="animate-spin" /> Verificando...</>
+                  : 'Ingresar al panel →'}
+              </button>
+            </div>
           </form>
 
           {/* Test accounts */}
-          <div className="mt-5 border-t border-border pt-5">
-            <p className="mb-3 text-[10px] font-bold uppercase tracking-wide text-text-3">Cuentas de prueba</p>
-            <div className="space-y-2">
-              {[
-                { role: 'cocinero',   email: 'cocina@mrsushi.com',    pass: 'cocina123'   },
-                { role: 'empacador',  email: 'empaque@mrsushi.com',   pass: 'empaque123'  },
-                { role: 'repartidor', email: 'entrega@mrsushi.com',   pass: 'entrega123'  },
-              ].map(({ role, email: e, pass }) => (
+          <div className="login-enter login-enter-5 mt-8">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-[9px] font-semibold tracking-[.2em] uppercase text-text-3">Cuentas de prueba</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {ACCOUNTS.map(({ role, email: e, pass, color }) => (
                 <button
                   key={role}
                   type="button"
                   onClick={() => { setEmail(e); setPassword(pass) }}
-                  className="flex w-full items-center gap-2.5 rounded-xl border border-border bg-surface-2 px-3 py-2.5 text-left transition hover:border-border-2 hover:bg-surface-3"
+                  className="login-account-chip"
                 >
-                  <span className="h-2 w-2 rounded-full shadow-sm" style={{ background: roleColors[role] }} />
-                  <span className="flex-1 text-[11px] font-semibold capitalize text-text-2">{role}</span>
-                  <span className="text-[10px] text-text-3">{e}</span>
+                  <span className="h-2 w-2 rounded-full" style={{ background: color, boxShadow: `0 0 7px ${color}` }} />
+                  <span className="text-[10px] font-semibold capitalize text-text-3">{role}</span>
                 </button>
               ))}
             </div>
           </div>
+
         </div>
       </div>
     </div>
@@ -178,6 +236,12 @@ function Sidebar({ page, setPage, open, setOpen, user, onLogout, orders }: {
   }
   const totalActive = Object.values(stageCounts).reduce((a, b) => a + b, 0)
   const delivered   = orders.filter(o => o.status === 'delivered').length
+  const urgentes    = orders.filter(o => o.elapsed >= 25 && o.status !== 'delivered').length
+  const avgElapsed  = totalActive > 0
+    ? Math.round(orders.filter(o => o.status !== 'delivered').reduce((a, o) => a + o.elapsed, 0) / totalActive)
+    : 0
+  const webCount    = orders.filter(o => o.channel === 'Web').length
+  const rappiCount  = orders.filter(o => o.channel === 'Rappi').length
 
   // Shift clock
   const [shiftTime, setShiftTime] = useState(() => {
@@ -201,89 +265,120 @@ function Sidebar({ page, setPage, open, setOpen, user, onLogout, orders }: {
 
   return <>
     {open && <button className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden" onClick={() => setOpen(false)} aria-label="Cerrar menú" />}
-    <aside className={`fixed inset-y-0 left-0 z-50 flex w-[240px] flex-col border-r border-border bg-surface px-4 py-5 transition-transform duration-300 lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between px-1">
-        <Logo />
-        <button className="grid h-7 w-7 place-items-center rounded-lg border border-border text-text-3 hover:text-text-1 lg:hidden" onClick={() => setOpen(false)}>
-          <X size={15}/>
-        </button>
-      </div>
+    <aside className={`fixed inset-y-0 left-0 z-50 flex w-[240px] flex-col border-r border-border bg-surface transition-transform duration-300 lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}>
 
-      {/* Section label */}
-      <div className="mt-8 px-1 text-[9px] font-bold uppercase tracking-[.2em] text-text-3">Navegación</div>
-
-      {/* Nav links */}
-      <nav className="mt-2 space-y-0.5">
-        {nav.map(item => (
-          <button
-            key={item.id}
-            onClick={() => { setPage(item.id); setOpen(false) }}
-            className={`nav-item ${page === item.id ? 'active' : ''}`}
-          >
-            <item.icon size={16} strokeWidth={page === item.id ? 2.2 : 1.7} />
-            <span>{item.label}</span>
-            {page === item.id && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-coral shadow-[0_0_6px_rgba(239,87,71,.7)]" />}
+      {/* ── TOP: logo + nav (fijo) ────────────────────────── */}
+      <div className="shrink-0 px-4 pt-5">
+        <div className="flex items-center justify-between px-1">
+          <Logo />
+          <button className="grid h-7 w-7 place-items-center rounded-lg border border-border text-text-3 hover:text-text-1 lg:hidden" onClick={() => setOpen(false)}>
+            <X size={15}/>
           </button>
-        ))}
-      </nav>
-
-      {/* ── Estado del turno ─────────────────────────────── */}
-      <div className="mt-6 px-1 text-[9px] font-bold uppercase tracking-[.2em] text-text-3">Estado del turno</div>
-
-      {/* Shift clock + active count */}
-      <div className="mt-2 flex items-center gap-3 rounded-2xl border border-border bg-surface-2 px-3.5 py-3">
-        <div className="flex-1">
-          <div className="text-[10px] text-text-3">Pedidos activos</div>
-          <div className="mt-0.5 font-display text-2xl leading-none text-text-1">{totalActive}</div>
         </div>
-        <div className="text-right">
-          <div className="text-[10px] text-text-3">Hora</div>
-          <div className="mt-0.5 font-mono text-sm font-bold text-text-1">{shiftTime}</div>
-        </div>
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-coral/10">
-          <Clock3 size={16} className="text-coral" />
-        </div>
+        <div className="mt-8 px-1 text-[9px] font-bold uppercase tracking-[.2em] text-text-3">Navegación</div>
+        <nav className="mt-2 space-y-0.5">
+          {nav.map(item => (
+            <button
+              key={item.id}
+              onClick={() => { setPage(item.id); setOpen(false) }}
+              className={`nav-item ${page === item.id ? 'active' : ''}`}
+            >
+              <item.icon size={16} strokeWidth={page === item.id ? 2.2 : 1.7} />
+              <span>{item.label}</span>
+              {page === item.id && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-coral shadow-[0_0_6px_rgba(239,87,71,.7)]" />}
+            </button>
+          ))}
+        </nav>
       </div>
 
-      {/* Per-stage rows */}
-      <div className="mt-2.5 space-y-1.5">
-        {stages.map(({ key, label, color }) => {
-          const count = stageCounts[key]
-          const pct   = totalActive > 0 ? Math.round((count / totalActive) * 100) : 0
-          return (
-            <div key={key} className="rounded-xl border border-border bg-surface-2 px-3 py-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full" style={{ background: color, boxShadow: `0 0 5px ${color}` }} />
-                  <span className="text-[10px] font-medium text-text-2">{label}</span>
+      {/* ── MIDDLE: stats + métricas (scrolleable) ───────── */}
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-2">
+        <div className="mt-6 px-1 text-[9px] font-bold uppercase tracking-[.2em] text-text-3">Estado del turno</div>
+
+        <div className="mt-2 flex items-center gap-3 rounded-2xl border border-border bg-surface-2 px-3.5 py-3">
+          <div className="flex-1">
+            <div className="text-[10px] text-text-3">Pedidos activos</div>
+            <div className="mt-0.5 font-display text-2xl leading-none text-text-1">{totalActive}</div>
+          </div>
+          <div className="text-right">
+            <div className="text-[10px] text-text-3">Hora</div>
+            <div className="mt-0.5 font-mono text-sm font-bold text-text-1">{shiftTime}</div>
+          </div>
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-coral/10">
+            <Clock3 size={16} className="text-coral" />
+          </div>
+        </div>
+
+        <div className="mt-2.5 space-y-1.5">
+          {stages.map(({ key, label, color }) => {
+            const count = stageCounts[key]
+            const pct   = totalActive > 0 ? Math.round((count / totalActive) * 100) : 0
+            return (
+              <div key={key} className="rounded-xl border border-border bg-surface-2 px-3 py-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full" style={{ background: color, boxShadow: `0 0 5px ${color}` }} />
+                    <span className="text-[10px] font-medium text-text-2">{label}</span>
+                  </div>
+                  <span className="text-[11px] font-bold text-text-1">{count}</span>
                 </div>
-                <span className="text-[11px] font-bold text-text-1">{count}</span>
+                <div className="mt-2 h-0.5 w-full rounded-full bg-border">
+                  <div className="h-0.5 rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: color }} />
+                </div>
               </div>
-              {/* Mini progress bar */}
-              <div className="mt-2 h-0.5 w-full rounded-full bg-border">
-                <div
-                  className="h-0.5 rounded-full transition-all duration-500"
-                  style={{ width: `${pct}%`, background: color }}
-                />
+            )
+          })}
+        </div>
+
+        <div className="mt-2.5 flex items-center justify-between rounded-xl border border-border bg-surface-2 px-3 py-2.5">
+          <div className="flex items-center gap-2">
+            <Check size={13} className="text-emerald-400" />
+            <span className="text-[10px] font-medium text-text-2">Entregados hoy</span>
+          </div>
+          <span className="text-[11px] font-bold text-emerald-400">{delivered}</span>
+        </div>
+
+        <div className="mt-6 px-1 text-[9px] font-bold uppercase tracking-[.2em] text-text-3">Métricas rápidas</div>
+
+        <div className="mt-2.5 space-y-1.5">
+          <div className="flex items-center justify-between rounded-xl border border-border bg-surface-2 px-3 py-2.5"
+            style={urgentes > 0 ? { borderColor: 'rgba(239,87,71,.3)', background: 'rgba(239,87,71,.06)' } : {}}>
+            <div className="flex items-center gap-2">
+              {urgentes > 0
+                ? <span className="live-dot inline-block h-1.5 w-1.5 rounded-full bg-coral" />
+                : <span className="inline-block h-1.5 w-1.5 rounded-full bg-text-3" />}
+              <span className="text-[10px] font-medium text-text-2">Urgentes (&gt;25 min)</span>
+            </div>
+            <span className={`text-[11px] font-bold ${urgentes > 0 ? 'text-coral' : 'text-text-1'}`}>{urgentes}</span>
+          </div>
+
+          <div className="flex items-center justify-between rounded-xl border border-border bg-surface-2 px-3 py-2.5">
+            <div className="flex items-center gap-2">
+              <Timer size={12} className="text-text-3" />
+              <span className="text-[10px] font-medium text-text-2">Tiempo promedio</span>
+            </div>
+            <span className="text-[11px] font-bold text-text-1">{avgElapsed > 0 ? `${avgElapsed} min` : '—'}</span>
+          </div>
+
+          <div className="rounded-xl border border-border bg-surface-2 px-3 py-2.5">
+            <div className="mb-2 text-[9px] font-semibold uppercase tracking-[.15em] text-text-3">Canal</div>
+            <div className="flex items-center gap-2">
+              <div className="flex flex-1 items-center justify-between">
+                <span className="text-[10px] text-text-3">Web</span>
+                <span className="text-[11px] font-bold text-blue-400">{webCount}</span>
+              </div>
+              <div className="h-3 w-px bg-border" />
+              <div className="flex flex-1 items-center justify-between">
+                <span className="text-[10px] text-text-3">Rappi</span>
+                <span className="text-[11px] font-bold text-orange-400">{rappiCount}</span>
               </div>
             </div>
-          )
-        })}
-      </div>
-
-      {/* Completed today */}
-      <div className="mt-2.5 flex items-center justify-between rounded-xl border border-border bg-surface-2 px-3 py-2.5">
-        <div className="flex items-center gap-2">
-          <Check size={13} className="text-emerald-400" />
-          <span className="text-[10px] font-medium text-text-2">Entregados hoy</span>
+          </div>
         </div>
-        <span className="text-[11px] font-bold text-emerald-400">{delivered + 48}</span>
       </div>
 
-      {/* Bottom area */}
-      <div className="mt-auto pt-4 space-y-3">
-        {/* User row */}
+      {/* ── BOTTOM: user row (fijo) ───────────────────────── */}
+      <div className="shrink-0 border-t border-border px-4 py-3">
         <div className="flex items-center gap-3 rounded-xl border border-border bg-surface-2 px-3 py-2.5">
           <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-coral/20 text-[11px] font-bold text-coral">{initials}</div>
           <div className="min-w-0 flex-1">
@@ -295,6 +390,7 @@ function Sidebar({ page, setPage, open, setOpen, user, onLogout, orders }: {
           </button>
         </div>
       </div>
+
     </aside>
   </>
 }

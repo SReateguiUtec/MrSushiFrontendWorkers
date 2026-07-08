@@ -244,7 +244,16 @@ button { -webkit-tap-highlight-color: transparent; cursor: pointer; }
   transition: border-color .18s, background .18s, transform .18s;
 }
 .login-account-chip:hover {
-  border-color: rgba(255,255,255,.12);
-  background: rgba(255,255,255,.05);
+  border-color: color-mix(in srgb, var(--chip-color) 50%, transparent);
+  background: color-mix(in srgb, var(--chip-color) 10%, transparent);
   transform: translateY(-2px);
+}
+.login-account-chip .chip-icon {
+  background: rgba(255,255,255,.05);
+  color: #3a3a48;
+  transition: background .18s, color .18s;
+}
+.login-account-chip:hover .chip-icon {
+  background: color-mix(in srgb, var(--chip-color) 15%, transparent);
+  color: var(--chip-color);
 }

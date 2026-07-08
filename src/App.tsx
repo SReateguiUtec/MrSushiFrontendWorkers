@@ -15,9 +15,9 @@ const flow: Status[] = ['received', 'cooking', 'packing', 'delivery', 'delivered
 // ─── Login Page ──────────────────────────────────────────────────────────────
 
 const ACCOUNTS = [
-  { role: 'cocinero',   email: 'cocina@mrsushi.com',  pass: 'cocina123',  color: '#ed8a35' },
-  { role: 'empacador',  email: 'empaque@mrsushi.com', pass: 'empaque123', color: '#8b5bb2' },
-  { role: 'repartidor', email: 'entrega@mrsushi.com', pass: 'entrega123', color: '#1f9b83' },
+  { role: 'cocinero',   email: 'cocina@mrsushi.com',  pass: 'cocina123',  color: '#ed8a35', icon: ChefHat     },
+  { role: 'empacador',  email: 'empaque@mrsushi.com', pass: 'empaque123', color: '#8b5bb2', icon: PackageCheck },
+  { role: 'repartidor', email: 'entrega@mrsushi.com', pass: 'entrega123', color: '#1f9b83', icon: Bike         },
 ]
 
 function LoginPage({ onLogin }: { onLogin: (user: WorkerUser, token: string) => void }) {
@@ -174,14 +174,17 @@ function LoginPage({ onLogin }: { onLogin: (user: WorkerUser, token: string) => 
               <div className="h-px flex-1 bg-border" />
             </div>
             <div className="grid grid-cols-3 gap-2">
-              {ACCOUNTS.map(({ role, email: e, pass, color }) => (
+              {ACCOUNTS.map(({ role, email: e, pass, color, icon: Icon }) => (
                 <button
                   key={role}
                   type="button"
                   onClick={() => { setEmail(e); setPassword(pass) }}
                   className="login-account-chip"
+                  style={{ '--chip-color': color } as React.CSSProperties}
                 >
-                  <span className="h-2 w-2 rounded-full" style={{ background: color, boxShadow: `0 0 7px ${color}` }} />
+                  <div className="chip-icon grid h-7 w-7 place-items-center rounded-lg">
+                    <Icon size={14} strokeWidth={1.8} />
+                  </div>
                   <span className="text-[10px] font-semibold capitalize text-text-3">{role}</span>
                 </button>
               ))}

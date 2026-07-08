@@ -35,33 +35,7 @@ export const statusInfo: Record<Status, { label: string; color: string; light: s
   delivered:{ label: 'Entregados', color: '#67716d', light: '#eff2f1', border: '#cbd1cf', action: 'Ver comprobante'    },
 }
 
-// ─── Mock data (se usa en modo demo sin backend) ─────────────────────────────
-
-const FLOW: Status[] = ['received', 'cooking', 'packing', 'delivery', 'delivered']
-
-const buildTimeline = (current: Status, base: string, workers: string[]): TimelineStep[] =>
-  FLOW.map((status, i) => {
-    const idx  = FLOW.indexOf(current)
-    const mins = Number(base.split(':')[1]) + i * 8
-    const hh   = `12:${String(mins % 60).padStart(2, '0')}`
-    return {
-      status,
-      start:    i <= idx ? hh : undefined,
-      end:      i < idx  ? `12:${String((mins + 6) % 60).padStart(2, '0')}` : undefined,
-      employee: i <= idx ? workers[i % workers.length] : undefined,
-    }
-  })
-
-export const initialOrders: Order[] = [
-  { id: '1048', customer: 'Lucía Mendoza',   channel: 'Web',   status: 'received', elapsed: 3,  amount: 58.8, address: 'Av. San Borja Norte 123, San Borja',      phone: '987 341 220', note: 'Sin ajonjolí en el segundo maki', items: [{ qty: 1, name: 'Maki box', detail: 'Acevichado + California', price: 39.9 }, { qty: 1, name: 'Ebi Furai', detail: '5 unidades', price: 14 }, { qty: 1, name: 'Inca Kola', detail: '500 ml', price: 4.9 }], timeline: buildTimeline('received', '04', ['Andrea']) },
-  { id: '1047', customer: 'Diego Salazar',    channel: 'Rappi', status: 'received', elapsed: 6,  amount: 50.8, address: 'Recojo por repartidor',                   phone: '—',           items: [{ qty: 2, name: 'Poke Ebi Furai', price: 29.9 }], timeline: buildTimeline('received', '01', ['Marco']) },
-  { id: '1046', customer: 'María Paz',        channel: 'Web',   status: 'cooking',  elapsed: 12, amount: 46.9, address: 'Jr. Monte Rosa 281, Surco',               phone: '942 817 301', items: [{ qty: 1, name: 'Box 25 makis', detail: 'Tokio + Baby + Furai', price: 46.9 }], timeline: buildTimeline('cooking', '52', ['Andrea', 'Luis']) },
-  { id: '1045', customer: 'Carlos Núñez',     channel: 'Web',   status: 'cooking',  elapsed: 18, amount: 65.7, address: 'Calle Las Palmeras 420, Miraflores',      phone: '993 560 118', note: 'Enviar salsa acevichada extra', items: [{ qty: 1, name: 'Super maki box', price: 54.9 }, { qty: 2, name: 'Coca-Cola', price: 4.9 }], timeline: buildTimeline('cooking', '46', ['Marco', 'César']) },
-  { id: '1044', customer: 'Valentina Ríos',   channel: 'Rappi', status: 'packing',  elapsed: 24, amount: 39.9, address: 'Recojo por repartidor',                   phone: '—',           items: [{ qty: 1, name: 'Maki box', detail: 'Mr. Sushi + Philadelphia', price: 39.9 }], timeline: buildTimeline('packing', '40', ['Andrea', 'Luis', 'Camila']) },
-  { id: '1043', customer: 'Joaquín Torres',   channel: 'Web',   status: 'delivery', elapsed: 32, amount: 74.8, address: 'Av. Primavera 1560, Surco',               phone: '950 227 891', items: [{ qty: 1, name: 'Box familiar', price: 69.9 }, { qty: 1, name: 'Agua San Luis', price: 4.9 }], timeline: buildTimeline('delivery', '31', ['Marco', 'César', 'Camila', 'Renzo']) },
-  { id: '1042', customer: 'Ana Sofía',        channel: 'Web',   status: 'delivery', elapsed: 39, amount: 45.8, address: 'Av. Benavides 1889, Miraflores',          phone: '978 412 608', items: [{ qty: 1, name: 'Poke Salmón', price: 29.9 }, { qty: 1, name: 'Temaki Tokio', price: 15.9 }], timeline: buildTimeline('delivery', '24', ['Andrea', 'Luis', 'Camila', 'Renzo']) },
-  { id: '1041', customer: 'Mateo Vargas',     channel: 'Rappi', status: 'delivered',elapsed: 41, amount: 55.8, address: 'Entregado',                               phone: '—',           items: [{ qty: 2, name: 'Hiroshima Maki', price: 25.9 }, { qty: 1, name: 'Coca-Cola', price: 4.9 }], timeline: buildTimeline('delivered', '15', ['Marco', 'César', 'Camila', 'Renzo', 'Renzo']) },
-]
+export const initialOrders: Order[] = []
 
 // ─── Mapa status backend → UI ─────────────────────────────────────────────────
 
@@ -133,17 +107,17 @@ export function getPasoActual(o: BackendOrder): Paso | null {
   return null
 }
 
-// ─── ordersApi: conectado al backend real, con fallback a mock ────────────────
+// ─── ordersApi: conectado al backend real ────────────────────────────────────
 
 export const ordersApi = {
-  /** Lista pedidos activos. Usa mock si no hay sesión iniciada. */
+  /** Lista pedidos activos del backend. */
   list: async (): Promise<Order[]> => {
-    if (!api.session.token) return initialOrders
+    if (!api.session.token) return []
     try {
       const { pedidos } = await api.listOrders()
       return pedidos.map(mapBackendOrder)
     } catch {
-      return initialOrders
+      return []
     }
   },
 

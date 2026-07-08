@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   Activity, ArrowRight, Bell, Bike, ChartNoAxesCombined, Check, ChefHat, ChevronRight,
-  ClipboardList, Clock3, CookingPot, FlaskConical, History, LayoutDashboard, Loader2,
-  LogOut, Menu, PackageCheck, Search, ShoppingBag, Sparkles, Timer,
+  ClipboardList, Clock3, CookingPot, History, LayoutDashboard, Loader2,
+  LogOut, Menu, PackageCheck, Search, ShoppingBag, Timer,
   TrendingDown, TrendingUp, Utensils, X, type LucideIcon,
 } from 'lucide-react'
-import { initialOrders, Order, ordersApi, Status, statusInfo } from './data'
+import { Order, ordersApi, Status, statusInfo } from './data'
 import { session, login as apiLogin, type WorkerUser } from './api'
 import { Button } from './components/ui/button'
 
@@ -14,9 +14,7 @@ const flow: Status[] = ['received', 'cooking', 'packing', 'delivery', 'delivered
 
 // ─── Login Page ──────────────────────────────────────────────────────────────
 
-const DEMO_USER: WorkerUser = { nombre: 'Admin Demo', email: 'demo@mrsushi.com', role: 'admin' }
-
-function LoginPage({ onLogin, onDemo }: { onLogin: (user: WorkerUser, token: string) => void; onDemo: () => void }) {
+function LoginPage({ onLogin }: { onLogin: (user: WorkerUser, token: string) => void }) {
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading]   = useState(false)
@@ -109,17 +107,6 @@ function LoginPage({ onLogin, onDemo }: { onLogin: (user: WorkerUser, token: str
               {loading ? <><Loader2 size={16} className="animate-spin" /> Ingresando...</> : 'Ingresar al panel'}
             </button>
           </form>
-
-          {/* Demo mode */}
-          <button
-            id="demo-mode-btn"
-            type="button"
-            onClick={onDemo}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border py-3 text-xs font-semibold text-text-3 transition hover:border-coral/30 hover:text-coral"
-          >
-            <FlaskConical size={14} />
-            Entrar en Modo Demo
-          </button>
 
           {/* Test accounts */}
           <div className="mt-5 border-t border-border pt-5">
@@ -296,15 +283,6 @@ function Sidebar({ page, setPage, open, setOpen, user, onLogout, orders }: {
 
       {/* Bottom area */}
       <div className="mt-auto pt-4 space-y-3">
-        {/* Tip card */}
-        <div className="dot-grid relative overflow-hidden rounded-2xl border border-border-2 bg-surface-2 p-4">
-          <div className="mb-2.5 grid h-8 w-8 place-items-center rounded-xl bg-[#ffd066]/15 text-[#ffd066]">
-            <Sparkles size={15}/>
-          </div>
-          <p className="text-xs font-semibold text-text-1">Todo bajo control</p>
-          <p className="mt-1 text-[10px] leading-relaxed text-text-3">Tiempo promedio 3 min menor que ayer.</p>
-        </div>
-
         {/* User row */}
         <div className="flex items-center gap-3 rounded-xl border border-border bg-surface-2 px-3 py-2.5">
           <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-coral/20 text-[11px] font-bold text-coral">{initials}</div>
@@ -770,7 +748,7 @@ function PlaceholderPage({ page, orders }: { page: 'history'|'stats'; orders: Or
         <div className="grid grid-cols-[.6fr_1fr_.8fr_.7fr] gap-3 border-b border-border bg-surface-2 px-4 py-3 text-[9px] font-bold uppercase tracking-wide text-text-3">
           <span>Pedido</span><span>Cliente</span><span>Canal</span><span>Total</span>
         </div>
-        {[...orders.filter(o=>o.status==='delivered'),...initialOrders.slice(2,6)].map((o,i)=>(
+        {orders.filter(o=>o.status==='delivered').map((o,i)=>(
           <div key={`${o.id}${i}`} className="grid grid-cols-[.6fr_1fr_.8fr_.7fr] gap-3 border-b border-border px-4 py-4 text-[11px] last:border-0 hover:bg-surface-2">
             <b className="text-text-1">#{Number(o.id)-i}</b>
             <span className="text-text-2">{o.customer}</span>
@@ -816,7 +794,7 @@ function PlaceholderPage({ page, orders }: { page: 'history'|'stats'; orders: Or
 
 export default function App() {
   const [page, setPage]         = useState<Page>('orders')
-  const [orders, setOrders]     = useState<Order[]>(initialOrders)
+  const [orders, setOrders]     = useState<Order[]>([])
   const [selected, setSelected] = useState<Order | null>(null)
   const [menu, setMenu]         = useState(false)
   const [user, setUser]         = useState<WorkerUser | null>(session.user)
@@ -845,16 +823,14 @@ export default function App() {
     setUser(worker)
   }
 
-  const handleDemoMode = () => { setUser(DEMO_USER) }
-
   const handleLogout = () => {
     session.clear()
     setUser(null)
-    setOrders(initialOrders)
+    setOrders([])
   }
 
   if (!user) {
-    return <LoginPage onLogin={handleLogin} onDemo={handleDemoMode} />
+    return <LoginPage onLogin={handleLogin} />
   }
 
   const titles = { dashboard: 'Dashboard', orders: 'Pedidos', history: 'Historial', stats: 'Estadísticas' }

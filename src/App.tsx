@@ -5,9 +5,10 @@ import {
   LogOut, Menu, PackageCheck, Search, ShoppingBag, Timer,
   TrendingDown, TrendingUp, Utensils, X, type LucideIcon,
 } from 'lucide-react'
-import { Order, ordersApi, Status, statusInfo } from './data'
+import { Order, ordersApi, Status, statusInfo, getPasoActual } from './data'
 import { session, login as apiLogin, type WorkerUser } from './api'
 import { Button } from './components/ui/button'
+import { ToastProvider, useToast } from './components/ui/toast'
 
 type Page = 'dashboard' | 'orders' | 'history' | 'stats'
 const flow: Status[] = ['received', 'cooking', 'packing', 'delivery', 'delivered']
@@ -558,22 +559,25 @@ function Dashboard({ orders, goOrders, user }: { orders: Order[]; goOrders: () =
 function OrderCard({ order, onOpen, onAdvance }: { order: Order; onOpen: () => void; onAdvance: () => void }) {
   const info   = statusInfo[order.status]
   const urgent = order.elapsed >= 30 && order.status !== 'delivered'
+  const stepStr = order._backendOrder ? getPasoActual(order._backendOrder) : null
+  const isEnProceso = stepStr && order._backendOrder?.steps[stepStr]?.status === 'EN_PROCESO'
 
   return (
     <article
       onClick={onOpen}
       className="group cursor-pointer rounded-2xl border border-border bg-surface p-4 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:border-border-2 hover:shadow-card-hover"
     >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="font-display text-lg text-text-1">#{order.id}</span>
-          <span className={`rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-wide ${
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <span className="truncate font-display text-lg text-text-1">#{order.id}</span>
+          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-wide ${
             order.channel === 'Rappi' ? 'bg-orange-500/15 text-orange-400' : 'bg-blue-500/15 text-blue-400'
           }`}>{order.channel}</span>
         </div>
-        <span className={`flex items-center gap-1 text-[10px] font-semibold ${urgent ? 'text-coral' : 'text-text-3'}`}>
-          <Clock3 size={11}/>{order.elapsed} min
-          {urgent && <span className="live-dot ml-0.5 inline-block h-1.5 w-1.5 rounded-full bg-coral"/>}
+        <span className={`shrink-0 flex items-center gap-1 whitespace-nowrap text-[10px] font-semibold ${urgent ? 'text-coral' : 'text-text-3'}`}>
+          <Clock3 size={11} className="shrink-0"/>
+          <span>{order.elapsed} min</span>
+          {urgent && <span className="live-dot ml-0.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-coral"/>}
         </span>
       </div>
       <div className="mt-2.5 text-[11px] font-semibold text-text-2">{order.customer}</div>
@@ -582,7 +586,9 @@ function OrderCard({ order, onOpen, onAdvance }: { order: Order; onOpen: () => v
         {order.items.slice(0,2).map((item,i) => (
           <div key={i} className="flex text-[10px] leading-4">
             <b className="mr-2 w-4 text-text-3">{item.qty}×</b>
-            <span className="text-text-2">{item.name}</span>
+            <span className="text-text-2">
+              {typeof item.name === 'string' ? item.name : (item.name as any)?.nombre || 'Producto inválido'}
+            </span>
           </div>
         ))}
       </div>
@@ -590,9 +596,13 @@ function OrderCard({ order, onOpen, onAdvance }: { order: Order; onOpen: () => v
       <button
         onClick={e => { e.stopPropagation(); onAdvance() }}
         className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-[10px] font-bold transition-all hover:brightness-110"
-        style={{ background: `${info.color}18`, color: info.color, border: `1px solid ${info.color}30` }}
+        style={
+          isEnProceso
+            ? { background: info.color, color: '#fff', border: `1px solid ${info.color}` }
+            : { background: `${info.color}18`, color: info.color, border: `1px solid ${info.color}30` }
+        }
       >
-        {order.status === 'delivered' ? 'Ver detalle' : info.action}
+        {order.status === 'delivered' ? 'Ver detalle' : isEnProceso ? info.action : 'Marcar en proceso'}
         <ChevronRight size={12}/>
       </button>
     </article>
@@ -614,6 +624,8 @@ function OrdersBoard({ orders, setOrders, openOrder }: { orders: Order[]; setOrd
   const [advancing, setAdvancing] = useState<string | null>(null)
   const visible = filter === 'all' ? orders : orders.filter(o=>o.channel===filter)
 
+  const { toast } = useToast()
+
   const advance = async (order: Order) => {
     if (order.status === 'delivered') { openOrder(order); return }
     setAdvancing(order.id)
@@ -621,6 +633,9 @@ function OrdersBoard({ orders, setOrders, openOrder }: { orders: Order[]; setOrd
       await ordersApi.advance(order)
       const updated = await ordersApi.list()
       setOrders(updated)
+      toast('Pedido avanzado correctamente', 'success')
+    } catch (e: any) {
+      toast(e.message || 'Error al avanzar pedido', 'error')
     } finally {
       setAdvancing(null)
     }
@@ -770,7 +785,9 @@ function OrderDetail({ order, onClose, onAdvance }: { order: Order; onClose: () 
                 <div key={i} className="flex items-start gap-3 border-b border-border p-3 last:border-0">
                   <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-surface text-[10px] font-bold text-text-2">{item.qty}×</span>
                   <div className="flex-1">
-                    <div className="text-[11px] font-semibold text-text-1">{item.name}</div>
+                    <div className="text-[11px] font-semibold text-text-1">
+                      {typeof item.name === 'string' ? item.name : (item.name as any)?.nombre || 'Producto inválido'}
+                    </div>
                     {item.detail && <div className="mt-0.5 text-[9px] text-text-3">{item.detail}</div>}
                   </div>
                   <span className="text-[10px] font-bold text-text-1">S/ {(item.price*item.qty).toFixed(2)}</span>
@@ -827,7 +844,11 @@ function OrderDetail({ order, onClose, onAdvance }: { order: Order; onClose: () 
             disabled={order.status === 'delivered'}
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-coral py-3.5 text-xs font-bold text-white shadow-glow-sm transition hover:shadow-glow hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-30"
           >
-            {order.status === 'delivered' ? 'Pedido completado' : info.action}
+            {order.status === 'delivered' ? 'Pedido completado' : (
+              (order._backendOrder && getPasoActual(order._backendOrder) && order._backendOrder.steps[getPasoActual(order._backendOrder)!]?.status === 'EN_PROCESO') 
+                ? info.action
+                : 'Marcar en proceso'
+            )}
             <ArrowRight size={13}/>
           </button>
         </div>
@@ -891,7 +912,7 @@ function PlaceholderPage({ page, orders }: { page: 'history'|'stats'; orders: Or
 
 // ─── App Root ─────────────────────────────────────────────────────────────────
 
-export default function App() {
+function App() {
   const [page, setPage]         = useState<Page>('orders')
   const [orders, setOrders]     = useState<Order[]>([])
   const [selected, setSelected] = useState<Order | null>(null)
@@ -910,11 +931,18 @@ export default function App() {
     [orders, selected],
   )
 
+  const { toast } = useToast()
+
   const advanceSelected = async () => {
     if (!currentSelected || currentSelected.status === 'delivered') return
-    await ordersApi.advance(currentSelected)
-    const updated = await ordersApi.list()
-    setOrders(updated)
+    try {
+      await ordersApi.advance(currentSelected)
+      const updated = await ordersApi.list()
+      setOrders(updated)
+      toast('Pedido avanzado correctamente', 'success')
+    } catch (e: any) {
+      toast(e.message || 'Error al avanzar pedido', 'error')
+    }
   }
 
   const handleLogin = (worker: WorkerUser, token: string) => {
@@ -948,3 +976,12 @@ export default function App() {
   )
 }
 
+// ─── Root with providers ──────────────────────────────────────────────────────
+
+export default function AppRoot() {
+  return (
+    <ToastProvider>
+      <App />
+    </ToastProvider>
+  )
+}

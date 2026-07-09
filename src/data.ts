@@ -126,7 +126,9 @@ export const ordersApi = {
     const bo = order._backendOrder
     if (!bo || !api.session.token) return
     const paso = getPasoActual(bo)
-    if (!paso) return
+    if (!paso) {
+      throw new Error('Este pedido se quedó atascado (su estado interno es PENDIENTE). Posible error del Step Functions o pedido antiguo.')
+    }
     const step = bo.steps[paso]
     if (step.status === 'DISPONIBLE') {
       await api.iniciarPaso(bo.orderId, paso)

@@ -114,7 +114,7 @@ export const ordersApi = {
   list: async (): Promise<Order[]> => {
     if (!api.session.token) return []
     try {
-      const { pedidos } = await api.listOrders()
+      const { pedidos } = await api.listOrders(true)
       return pedidos.map(mapBackendOrder)
     } catch {
       return []

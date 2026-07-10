@@ -83,7 +83,7 @@ export function mapBackendOrder(o: BackendOrder): Order {
 
   return {
     id:             o.orderId,
-    customer:       o.userNombre || o.userEmail,
+    customer:       typeof o.userNombre === 'string' ? o.userNombre : (o.userNombre as any)?.nombre || typeof o.userEmail === 'string' ? o.userEmail : (o.userEmail as any)?.email || 'Cliente',
     channel:        o.canal === 'rappi' ? 'Rappi' : 'Web',
     status,
     elapsed:        elapsedMin,

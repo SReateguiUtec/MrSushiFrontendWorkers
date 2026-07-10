@@ -459,8 +459,19 @@ function MetricCard({ label, value, note, icon: Icon, tone, accent }: {
 
 function Dashboard({ orders, goOrders, user }: { orders: Order[]; goOrders: () => void; user: WorkerUser | null }) {
   const active = orders.filter(o => o.status !== 'delivered').length
+  const delivered = orders.filter(o => o.status === 'delivered')
+  const entregadosHoy = delivered.length
+  
+  const ventasTurno = orders.reduce((sum, o) => sum + (Number(o.amount) || 0), 0)
+  const ticketPromedio = orders.length > 0 ? (ventasTurno / orders.length) : 0
+  
+  const sourceForTime = delivered.length > 0 ? delivered : orders
+  const tiempoPromedio = sourceForTime.length > 0 ? Math.round(sourceForTime.reduce((sum, o) => sum + (o.elapsed || 0), 0) / sourceForTime.length) : 0
+
   const nombre = user?.nombre?.split(' ')[0] ?? 'trabajador'
   const greeting = new Date().getHours() < 12 ? 'Buenos días' : new Date().getHours() < 19 ? 'Buenas tardes' : 'Buenas noches'
+
+  const recentActivity = [...orders].sort((a, b) => (a.elapsed || 0) - (b.elapsed || 0)).slice(0, 4)
 
   return (
     <div className="fade-in p-4 sm:p-6">
@@ -481,9 +492,9 @@ function Dashboard({ orders, goOrders, user }: { orders: Order[]; goOrders: () =
       {/* Metrics */}
       <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="Pedidos activos" value={String(active)} note="En el turno actual" icon={CookingPot} tone="bg-[#ed8a35]/15 text-[#ed8a35]" accent="#ed8a35" />
-        <MetricCard label="Entregados hoy"  value="48"            note="Meta diaria: 65"    icon={PackageCheck} tone="bg-[#1f9b83]/15 text-[#1f9b83]" accent="#1f9b83" />
-        <MetricCard label="Tiempo promedio" value="26 min"        note="Ayer: 29 min"       icon={Timer}        tone="bg-[#5b6fd8]/15 text-[#5b6fd8]" accent="#5b6fd8" />
-        <MetricCard label="Ventas del turno" value="S/ 2,840"    note="Ticket prom. S/ 59" icon={TrendingUp}   tone="bg-[#8b5bb2]/15 text-[#8b5bb2]" accent="#8b5bb2" />
+        <MetricCard label="Entregados hoy"  value={String(entregadosHoy)} note="Pedidos completados" icon={PackageCheck} tone="bg-[#1f9b83]/15 text-[#1f9b83]" accent="#1f9b83" />
+        <MetricCard label="Tiempo promedio" value={`${tiempoPromedio} min`} note="Por pedido" icon={Timer} tone="bg-[#5b6fd8]/15 text-[#5b6fd8]" accent="#5b6fd8" />
+        <MetricCard label="Ventas del turno" value={`S/ ${ventasTurno.toFixed(2)}`} note={`Ticket prom. S/ ${ticketPromedio.toFixed(2)}`} icon={TrendingUp} tone="bg-[#8b5bb2]/15 text-[#8b5bb2]" accent="#8b5bb2" />
       </div>
 
       {/* Charts row */}
@@ -528,25 +539,27 @@ function Dashboard({ orders, goOrders, user }: { orders: Order[]; goOrders: () =
             </span>
           </div>
           <div className="mt-5 space-y-4">
-            {[
-              ['#1043 salió a reparto',   'Renzo · hace 2 min',  Bike,        '#1f9b83', 'bg-[#1f9b83]/15'],
-              ['#1044 terminó de empacar','Camila · hace 5 min', PackageCheck,'#8b5bb2', 'bg-[#8b5bb2]/15'],
-              ['#1046 entró a cocina',    'Luis · hace 8 min',   ChefHat,     '#ed8a35', 'bg-[#ed8a35]/15'],
-              ['Nuevo pedido #1048',      'Web · hace 10 min',   ShoppingBag, '#5b6fd8', 'bg-[#5b6fd8]/15'],
-            ].map(([a,b,I,clr,bg],i) => {
-              const Icon = I as LucideIcon
+            {recentActivity.length > 0 ? recentActivity.map((o,i) => {
+              const sInfo = statusInfo[o.status]
+              let Icon = ShoppingBag
+              if (o.status === 'cooking') Icon = ChefHat
+              if (o.status === 'packing') Icon = PackageCheck
+              if (o.status === 'delivery') Icon = Bike
+              if (o.status === 'delivered') Icon = Check
+
+              const shortId = String(o.id).substring(0, 6).toUpperCase()
               return (
                 <div key={i} className="flex gap-3">
-                  <div className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ${bg}`} style={{ color: clr as string }}>
+                  <div className={`grid h-8 w-8 shrink-0 place-items-center rounded-full`} style={{ color: sInfo.color, backgroundColor: sInfo.light }}>
                     <Icon size={14} strokeWidth={2}/>
                   </div>
                   <div>
-                    <div className="text-[11px] font-semibold text-text-1">{a as string}</div>
-                    <div className="mt-0.5 text-[9px] text-text-3">{b as string}</div>
+                    <div className="text-[11px] font-semibold text-text-1">#{shortId} {sInfo.label.toLowerCase()}</div>
+                    <div className="mt-0.5 text-[9px] text-text-3">{o.channel} · hace {o.elapsed} min</div>
                   </div>
                 </div>
               )
-            })}
+            }) : <div className="text-xs text-text-3">No hay actividad reciente.</div>}
           </div>
         </div>
       </div>
@@ -569,7 +582,7 @@ function OrderCard({ order, onOpen, onAdvance }: { order: Order; onOpen: () => v
     >
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 flex-1 items-center gap-2">
-          <span className="truncate font-display text-lg text-text-1">#{order.id}</span>
+          <span className="truncate font-display text-lg text-text-1">#{String(order.id).substring(0,6).toUpperCase()}</span>
           <span className={`shrink-0 rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-wide ${
             order.channel === 'Rappi' ? 'bg-orange-500/15 text-orange-400' : 'bg-blue-500/15 text-blue-400'
           }`}>{order.channel}</span>
@@ -721,7 +734,7 @@ function OrderDetail({ order, onClose, onAdvance }: { order: Order; onClose: () 
         <div className="topbar-blur sticky top-0 z-10 flex items-center justify-between px-5 py-4">
           <div>
             <p className="text-[9px] font-bold uppercase tracking-[.15em] text-text-3">Detalle del pedido</p>
-            <h2 className="mt-1 font-display text-2xl text-text-1">Pedido #{order.id}</h2>
+            <h2 className="mt-1 font-display text-2xl text-text-1">Pedido #{String(order.id).substring(0,6).toUpperCase()}</h2>
           </div>
           <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-full border border-border bg-surface-2 text-text-3 hover:text-text-1">
             <X size={15}/>
@@ -870,7 +883,7 @@ function PlaceholderPage({ page, orders }: { page: 'history'|'stats'; orders: Or
         </div>
         {orders.filter(o=>o.status==='delivered').map((o,i)=>(
           <div key={`${o.id}${i}`} className="grid grid-cols-[.6fr_1fr_.8fr_.7fr] gap-3 border-b border-border px-4 py-4 text-[11px] last:border-0 hover:bg-surface-2">
-            <b className="text-text-1">#{Number(o.id)-i}</b>
+            <b className="text-text-1">#{String(o.id).substring(0,6).toUpperCase()}</b>
             <span className="text-text-2">{o.customer}</span>
             <span className="text-text-2">{o.channel}</span>
             <b className="text-text-1">S/ {o.amount.toFixed(2)}</b>
@@ -880,27 +893,72 @@ function PlaceholderPage({ page, orders }: { page: 'history'|'stats'; orders: Or
     </div>
   )
 
+  const totalOrders = orders.length
+  const deliveredOrders = orders.filter(o => o.status === 'delivered')
+  const entregados = deliveredOrders.length
+  
+  // Calcular promedios de tiempo por etapa
+  const times = { received: [] as number[], cooking: [] as number[], packing: [] as number[], delivery: [] as number[] }
+  let onTimeCount = 0
+
+  orders.forEach(o => {
+    const bo = o._backendOrder
+    if (!bo) return
+    const created = new Date(bo.createdAt).getTime()
+    
+    if (bo.steps.cocina?.startedAt) {
+      times.received.push((new Date(bo.steps.cocina.startedAt).getTime() - created) / 60000)
+    }
+    if (bo.steps.cocina?.startedAt && bo.steps.cocina?.finishedAt) {
+      times.cooking.push((new Date(bo.steps.cocina.finishedAt).getTime() - new Date(bo.steps.cocina.startedAt).getTime()) / 60000)
+    }
+    if (bo.steps.empaque?.startedAt && bo.steps.empaque?.finishedAt) {
+      times.packing.push((new Date(bo.steps.empaque.finishedAt).getTime() - new Date(bo.steps.empaque.startedAt).getTime()) / 60000)
+    }
+    if (bo.steps.entrega?.startedAt && bo.steps.entrega?.finishedAt) {
+      times.delivery.push((new Date(bo.steps.entrega.finishedAt).getTime() - new Date(bo.steps.entrega.startedAt).getTime()) / 60000)
+    }
+
+    if (o.status === 'delivered' && o.elapsed <= 45) {
+      onTimeCount++
+    }
+  })
+
+  const avg = (arr: number[]) => arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : 0
+  const averages = {
+    received: avg(times.received),
+    cooking: avg(times.cooking),
+    packing: avg(times.packing),
+    delivery: avg(times.delivery)
+  }
+
+  const avgTotalTime = entregados > 0 ? Math.round(deliveredOrders.reduce((sum, o) => sum + o.elapsed, 0) / entregados) : 0
+  const onTimePercent = entregados > 0 ? Math.round((onTimeCount / entregados) * 100) : 100
+  const cookingAvgStr = averages.cooking > 0 ? `${averages.cooking} min` : '-'
+
   return (
     <div className="fade-in p-4 sm:p-6">
       <h2 className="font-display text-[26px] text-text-1">Estadísticas</h2>
       <p className="mt-0.5 text-xs text-text-3">Rendimiento de la operación durante esta semana.</p>
       <div className="mt-6 grid gap-4 md:grid-cols-3">
-        <MetricCard label="Eficiencia de cocina" value="94%" note="+6% esta semana"  icon={ChefHat}     tone="bg-[#ed8a35]/15 text-[#ed8a35]" accent="#ed8a35" />
-        <MetricCard label="Entregas a tiempo"    value="91%" note="Objetivo: 90%"    icon={Bike}        tone="bg-[#1f9b83]/15 text-[#1f9b83]" accent="#1f9b83" />
-        <MetricCard label="Reclamos"             value="1.8%" note="-0.4% vs. junio" icon={TrendingDown} tone="bg-[#5b6fd8]/15 text-[#5b6fd8]" accent="#5b6fd8" />
+        <MetricCard label="T. Prom. de Cocina" value={cookingAvgStr} note="Tiempo neto cocinando"  icon={ChefHat}     tone="bg-[#ed8a35]/15 text-[#ed8a35]" accent="#ed8a35" />
+        <MetricCard label="Entregas < 45 min"    value={`${onTimePercent}%`} note="Objetivo: 90%"    icon={Bike}        tone="bg-[#1f9b83]/15 text-[#1f9b83]" accent="#1f9b83" />
+        <MetricCard label="Tiempo Total"             value={`${avgTotalTime} min`} note="Promedio de pedido completo" icon={Timer} tone="bg-[#5b6fd8]/15 text-[#5b6fd8]" accent="#5b6fd8" />
       </div>
       <div className="mt-4 rounded-2xl border border-border bg-surface p-6 shadow-card">
         <h3 className="text-sm font-semibold text-text-1">Tiempo promedio por etapa</h3>
         <div className="mt-7 space-y-5">
-          {flow.slice(0,4).map((s,i) => {
-            const vals=[4,12,6,18]
+          {flow.slice(0,4).map((s) => {
+            const val = averages[s as keyof typeof averages] || 0
+            // Máximo visual de 30 min (para que la barra no se desborde si el tiempo es muy alto)
+            const widthPercent = Math.min((val / 30) * 100, 100)
             return (
               <div key={s} className="grid grid-cols-[90px_1fr_42px] items-center gap-3 text-[10px]">
                 <b className="text-text-2">{statusInfo[s].label}</b>
                 <div className="h-1.5 rounded-full bg-border">
-                  <div className="h-1.5 rounded-full transition-all" style={{ width:`${vals[i]*5}%`, background: statusInfo[s].color, boxShadow: `0 0 6px ${statusInfo[s].color}` }}/>
+                  <div className="h-1.5 rounded-full transition-all" style={{ width:`${widthPercent}%`, background: statusInfo[s].color, boxShadow: `0 0 6px ${statusInfo[s].color}` }}/>
                 </div>
-                <span className="font-bold text-text-1">{vals[i]} min</span>
+                <span className="font-bold text-text-1">{val} min</span>
               </div>
             )
           })}
